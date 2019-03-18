@@ -2,6 +2,7 @@ import logging
 import pickle
 import xml.etree.ElementTree as ET
 import time
+import os
 
 from Bio import Entrez
 
@@ -13,6 +14,11 @@ Entrez.email = "ludor19@student.sdu.dk"
 def get_pubmed_articles(query, name, id_batch_size=1000, article_batch_size=100):
     assert id_batch_size > article_batch_size, "Error: The article batch size has to be smaller than the ID batch size"
     assert id_batch_size <= 100000, "Error: Cannot get more than 100.000 ids at a time from pubmed."
+
+    assert not os.path.exists(
+        name), "Error: directory for supplied name already exists."
+    os.makedirs(name)
+
     counthandle = Entrez.egquery(term=query)
     record = Entrez.read(counthandle)
     amount = 0
@@ -56,7 +62,7 @@ def get_pubmed_articles(query, name, id_batch_size=1000, article_batch_size=100)
             next_articles_record = Entrez.read(next_articles_handle)
             next_articles_handle.close()
             pickle.dump(next_articles_record, open(
-                "{}_{}".format(name, currentarticles), "wb"))
+                "{}/{}_{}".format(name,name, currentarticles), "wb"))
             logging.info("Fetched articles {} to {} (on a total of {}) from ids batch number {}".format(
                 articles_iteration_count * article_batch_size,
                 (articles_iteration_count + 1) * article_batch_size,
@@ -67,13 +73,17 @@ def get_pubmed_articles(query, name, id_batch_size=1000, article_batch_size=100)
                 elapsed_rec = time.time() - start
                 batch_time = elapsed_rec * id_batch_size / article_batch_size + elapsed
                 tot_time = batch_time * (amount / id_batch_size)
-                logging.info("ETA: {}m{}s".format(int(tot_time //60), int(tot_time%60)))
+                logging.info("ETA: {}m{}s".format(
+                    int(tot_time // 60), int(tot_time % 60)))
 
             articles_iteration_count += 1
             currentarticles += article_batch_size
 
+def open_local_article_set(directory):
+    assert os.path.exists(directory), "Error: supplied directory does not exist."
+    
 
 query = """hasstructuredabstract[All Fields] AND medline[sb] AND "obesity"[All Fields] AND ("2009/03/20"[PDat] : "2019/03/17"[PDat] AND "humans"[MeSH Terms])"""
 
 
-get_pubmed_articles(query, "test_run_1", 100000, 1000)
+# get_pubmed_articles(query, "test_run_1", 100000, 1000)
