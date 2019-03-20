@@ -3,3 +3,6 @@
 pubmed19n0001.xml
 pubmed19n0971.xml
 test_run*
+__pycache__
+data
+.DS_Store
