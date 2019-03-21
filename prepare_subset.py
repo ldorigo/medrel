@@ -1,6 +1,5 @@
 import logging
 import pickle
-import xml.etree.ElementTree as ET
 import time
 import os
 
@@ -79,9 +78,6 @@ def get_pubmed_articles(query, name, id_batch_size=1000, article_batch_size=100)
             articles_iteration_count += 1
             currentarticles += article_batch_size
 
-def open_local_article_set(directory):
-    assert os.path.exists(directory), "Error: supplied directory does not exist."
-    
 
 query = """hasstructuredabstract[All Fields] AND medline[sb] AND "obesity"[All Fields] AND ("2009/03/20"[PDat] : "2019/03/17"[PDat] AND "humans"[MeSH Terms])"""
 
