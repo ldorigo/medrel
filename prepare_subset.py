@@ -1,22 +1,43 @@
+"""
+Module to handle downloading data from pubmed
+"""
 import logging
+import gc
 import pickle
 import time
-import os
-
+from os.path import exists, join, isfile
+from os import makedirs, listdir
 from Bio import Entrez
-
+from shutil import rmtree
 logging.basicConfig(level=logging.DEBUG)
 
 Entrez.email = "ludor19@student.sdu.dk"
 
 
 def get_pubmed_articles(query, name, id_batch_size=1000, article_batch_size=100):
-    assert id_batch_size > article_batch_size, "Error: The article batch size has to be smaller than the ID batch size"
+    """
+    Download a set of articles from pubmed.
+
+    query: query to send to pubmed
+    name: directory name in which to save the results. must not exist yet.
+    id_batch_size: amount of id's to get at a time
+    article_batch_size: amount of articles to download at a time.
+    """
+    assert id_batch_size >= article_batch_size, "Error: The article batch size has to be smaller than the ID batch size"
     assert id_batch_size <= 100000, "Error: Cannot get more than 100.000 ids at a time from pubmed."
 
-    assert not os.path.exists(
-        name), "Error: directory for supplied name already exists."
-    os.makedirs(name)
+    if exists(name):
+        logging.error("Error: directory for supplied name already exists. ")
+        choice = input("Overwrite? [n]")
+        while choice not in ["y", "n", ""]:
+            choice = input("Overwrite? [n]")
+        if choice == "y":
+            rmtree(name)
+        else:
+            return
+
+    makedirs(name)
+    logging.debug("Created directory for abstract files: %s", name)
 
     counthandle = Entrez.egquery(term=query)
     record = Entrez.read(counthandle)
@@ -61,7 +82,7 @@ def get_pubmed_articles(query, name, id_batch_size=1000, article_batch_size=100)
             next_articles_record = Entrez.read(next_articles_handle)
             next_articles_handle.close()
             pickle.dump(next_articles_record, open(
-                "{}/{}_{}".format(name,name, currentarticles), "wb"))
+                "{}/articles_{}".format(name, currentarticles), "wb"))
             logging.info("Fetched articles {} to {} (on a total of {}) from ids batch number {}".format(
                 articles_iteration_count * article_batch_size,
                 (articles_iteration_count + 1) * article_batch_size,
@@ -79,7 +100,35 @@ def get_pubmed_articles(query, name, id_batch_size=1000, article_batch_size=100)
             currentarticles += article_batch_size
 
 
-query = """hasstructuredabstract[All Fields] AND medline[sb] AND "obesity"[All Fields] AND ("2009/03/20"[PDat] : "2019/03/17"[PDat] AND "humans"[MeSH Terms])"""
+def open_local_article_set(directory: str):
+    """
+    Return a generator that allows to seamlessly iterate
+    through local files containing pubmed articles.
+    """
+    assert exists(directory), "Error: supplied directory does not exist."
 
+    logging.debug("Opening set of articles: %s.", directory)
 
-# get_pubmed_articles(query, "test_run_1", 100000, 1000)
+    files = [
+        join(directory, f)
+        for f in listdir(directory)
+        if isfile(join(directory, f)) and f != ".DS_Store"
+    ]
+    logging.debug("%d files in directory.", len(files))
+
+    def load_file(file):
+        with open(file, "rb") as f:
+            gc.disable()
+            res = pickle.load(f)
+            gc.enable()
+            return res
+
+    def my_generator():
+        for file in files:
+            logging.debug("Opening next file: %s", file)
+            with open(file, "rb") as f:
+                current_list = load_file(file)
+            for item in current_list["PubmedArticle"]:
+                yield item
+
+    return my_generator

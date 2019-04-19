@@ -6,3 +6,6 @@ test_run*
 __pycache__
 data
 .DS_Store
+pymetamap
+Multi-BioNER
+BioCreativeVI_BioID_assignment
