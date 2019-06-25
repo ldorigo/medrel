@@ -1,0 +1,8 @@
+{
+    "typeshedPath": "/Users/ldorigo/.typesheds/typeshed",
+    "pythonVersion": "3.6",
+    "pythonPlatform": "Darwin",
+    "reportConstantRedefinition": true,
+    "reportMissingImports": true,
+
+}
