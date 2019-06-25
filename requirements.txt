@@ -1,0 +1,6 @@
+scispacy==0.2.2
+spacy==2.1.4
+pandas==0.24.2
+tqdm==4.32.1
+wget==3.2
+biopython==1.73
