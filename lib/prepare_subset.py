@@ -354,6 +354,7 @@ class DataSet:
         # result = ["\n".join(categories[cat]) for cat in categories.keys()]
         # lens = [len(i) for i in result]
         abstract = "".join(results)
+        normalized_abstract = preprocessing.normalize_abstract(abstract,datapath=self.)
         parsed: spacy.tokens.Doc
         parsed = self.nlp(abstract)
 
@@ -370,82 +371,6 @@ class DataSet:
         parsed._.date = date
         _logger.debug("Parsed article into spacy doc.")
         return parsed
-
-
-#     def parse_raw_abstracts(self):
-#         """Process the raw abstracts and generate the corresponding spacy docs.
-
-#         [extended_summary]
-#         """
-#         tot_amount = self.metadata["raw_abstracts_count"]
-#         _logger.debug("Parsing {} raw abstracts into spacy docs.".format(tot_amount))
-#         abstract_generator = self.get_raw_abstracts_generator()
-#         count = 0
-#         count_valid = 0
-#         last_timing = time.time()
-#         start_time = time.time()
-#         parsed_abstracts = []
-#         for abstract_dict in abstract_generator:
-#             if count % 10 == 0:
-#                 prev_timing = last_timing
-#                 last_timing = time.time()
-#                 time_per_abstract = (last_timing - prev_timing) / 10.0
-#                 amount_left = tot_amount - count
-#                 time_left = amount_left * time_per_abstract
-#                 _logger.debug(
-#                     "Parsing abstract {}/{}. ETA: {}s.".format(
-#                         count, tot_amount, time_left
-#                     )
-#                 )
-#             parsed_abstract = self.make_abstract_doc(abstract_dict)
-#             if parsed_abstract is not None:
-#                 count_valid += 1
-#                 parsed_abstracts.append(parsed_abstract)
-#             if len(parsed_abstracts) == 1000:
-#                 _logger.debug("Parsed 1000 abstracts. Saving...")
-#                 pickle.dump(
-#                     parsed_abstracts,
-#                     open(
-#                         join(
-#                             self.path,
-#                             "abstract_docs",
-#                             "abstracts_{}-{}".format(count_valid - 1000, count_valid),
-#                         ),
-#                         "wb",
-#                     ),
-#                 )
-#                 parsed_abstracts = []
-#                 _logger.debug(
-#                     "Saved 1000 abstracts to file: abstracts_{}-{}".format(
-#                         count_valid - 1000, count_valid
-#                     )
-#                 )
-#             count += 1
-
-#         if len(parsed_abstracts) != 0:
-#             _logger.debug("Saving the last parsed abstracts...")
-#             pickle.dump(
-#                 parsed_abstracts,
-#                 open(
-#                     join(
-#                         self.path,
-#                         "abstract_docs",
-#                         "abstracts_{}-{}".format(
-#                             count_valid - len(parsed_abstracts), count_valid
-#                         ),
-#                     ),
-#                     "wb",
-#                 ),
-#             )
-#             _logger.debug(
-#                 "Saved {} abstracts to file: abstracts_{}-{}".format(
-#                     len(parsed_abstracts),
-#                     count_valid - len(parsed_abstracts),
-#                     count_valid,
-#                 )
-#             )
-
-#         self.metadata["abstract_doc_count"] = count_valid
 
 
 class DataManager:
