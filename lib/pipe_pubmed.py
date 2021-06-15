@@ -181,13 +181,10 @@ def save_abstracts_to_files(
 def abstracts_from_files_generator(
     folder_path: Path,
 ) -> Generator[Tuple[int, str], None, None]:
-    i = 0
-    while i < 2000:
-        for file in folder_path.glob("*.json"):
-            with open(file, "r") as f:
-                abstract = json.load(f)
-                i += 1
-                yield abstract
+    for file in folder_path.glob("*.json"):
+        with open(file, "r") as f:
+            abstract = json.load(f)
+            yield abstract
 
 
 if __name__ == "__main__":
