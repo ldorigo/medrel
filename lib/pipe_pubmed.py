@@ -1,6 +1,7 @@
 """Module handling the retrieval of raw abstract texts from pubmed.
 """
 
+from pathlib import Path
 from typing import (
     Generator,
     Iterator,
@@ -11,6 +12,7 @@ from typing import (
     Dict,
     Union,
 )
+import json
 import itertools
 from Bio import Entrez
 from Bio.Entrez import Parser
@@ -167,6 +169,27 @@ def get_abstracts_generator(
         yield (results_text, metadata)
 
 
+def save_abstracts_to_files(
+    abstracts_generator: Iterator[Tuple[str, AbstractMetadata]], data_dir: Path
+):
+    assert data_dir.exists() and data_dir.is_dir()
+    for abstract in abstracts_generator:
+        with open(data_dir / f"{abstract[1]['pmid']}.json", "w+") as f:
+            json.dump(abstract, f)
+
+
+def abstracts_from_files_generator(
+    folder_path: Path,
+) -> Generator[Tuple[int, str], None, None]:
+    i = 0
+    while i < 2000:
+        for file in folder_path.glob("*.json"):
+            with open(file, "r") as f:
+                abstract = json.load(f)
+                i += 1
+                yield abstract
+
+
 if __name__ == "__main__":
     test_query = """"hypersomnia" [All Fields] AND medline[sb] AND "2009/03/20"[PDat] : "2019/03/17"[PDat] AND "humans"[MeSH Terms]"""
 
@@ -177,5 +200,7 @@ if __name__ == "__main__":
             yield id
 
     raw_abstracts_generator = get_raw_abstracts_generator(inner_gen())
-    for abs in get_abstracts_generator(raw_abstracts_generator):
-        print(abs)
+    ag = get_abstracts_generator(raw_abstracts_generator)
+    data_path = Path("../data/test_data")
+    # data_path.mkdir()
+    save_abstracts_to_files(ag, data_path)
