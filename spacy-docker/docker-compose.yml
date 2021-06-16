@@ -1,0 +1,10 @@
+version: "3"
+services:
+  spacy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: result/latest
+    ports:
+      - 8888:8888
+    command: jupyter-lab
