@@ -60,6 +60,18 @@ def get_pmids_generator(
     batch_size: int = 10000,
     max_amount: int = 0,
 ) -> Tuple[int, Generator[Tuple[int, str], None, int]]:
+    """Get a generator that yields the list of pubmed IDs (pmids) corresponding to the given query.
+
+    Args:
+        query (str): query string that can be understood by pubmed
+        ignore (Optional[Set[str]], optional): optional set of pmids to ignore (for resuming prevous runs). Defaults to None.
+        batch_size (int, optional): how many pmids to request at a time. Defaults to 10000.
+        max_amount (int, optional): maximum amount of ids to request (if >0). Defaults to 0.
+
+    Yields:
+        Iterator[Tuple[int, Generator[Tuple[int, str], None, int]]]: Tuples where the first element
+        indicates how many pmids were processed (including the ignored ones) and the second element is the pmid.
+    """
 
     # Get the amount of results
     ids_handle = Entrez.egquery(term=query)
@@ -118,6 +130,15 @@ def get_pmids_generator(
 def get_raw_abstracts_generator(
     ids: Iterator[str], batch_size: int = 100
 ) -> Iterator[Parser.DictionaryElement]:
+    """Given an iterator of pmids, return a generator that yields the raw abstract objects corresponding to each pmid.
+
+    Args:
+        ids (Iterator[str]): Iterator containing omids
+        batch_size (int, optional): amount of abstract to fetch at a time. Defaults to 100.
+
+    Yields:
+        Iterator[Parser.DictionaryElement]: Abstract in the format that is returned by the Entrez API
+    """
 
     while next_ids := list(itertools.islice(ids, batch_size)):
         next_abstracts_handle = Entrez.efetch(db="pubmed", id=next_ids, retmode="xml")
@@ -135,6 +156,14 @@ def get_raw_abstracts_generator(
 def get_abstracts_generator(
     raw_abstracts_generator: Iterator[Parser.DictionaryElement],
 ) -> Generator[Tuple[str, AbstractMetadata], None, None]:
+    """Convert from raw Entrez abstracts to a tuple containing the text of the abstract and a dictionaryof metadata.
+
+    Args:
+        raw_abstracts_generator (Iterator[Parser.DictionaryElement]): Iterator containing raw pubmed abstracts
+
+    Yields:
+        Generator[Tuple[str, AbstractMetadata], None, None]: Generator that yields Tuples with the abstract text and a dict with its metadata
+    """
     for abstract_dict in raw_abstracts_generator:
         pmid: str = str(abstract_dict["MedlineCitation"]["PMID"])
         abstract = abstract_dict["MedlineCitation"]["Article"]
