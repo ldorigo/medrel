@@ -209,7 +209,7 @@ def save_abstracts_to_files(
 
 def abstracts_from_files_generator(
     folder_path: Path,
-) -> Generator[Tuple[int, str], None, None]:
+) -> Generator[Tuple[str, AbstractMetadata], None, None]:
     for file in folder_path.glob("*.json"):
         with open(file, "r") as f:
             abstract = json.load(f)

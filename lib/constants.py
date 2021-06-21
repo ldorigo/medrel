@@ -1,27 +1,11 @@
-#################################
-## For dataframe manipulations ##
-#################################
-
-TEXT_COLUMNS = [
-    "title",
-    "journal",
-    "background",
-    "objective",
-    "methods",
-    "results",
-    "conclusions",
-]
-
-BODY_COLUMNS = ["background", "objective", "methods", "results", "conclusions"]
-
-RELEVANT_COLUMNS = ["background", "results", "conclusions"]
+from typing import Any, List, Dict
 
 #################################
 ## Patterns for analysis ########
 #################################
 
 
-PATTERNS_NEUTRAL_RELATIONS = [
+PATTERNS_NEUTRAL_RELATIONS: List[List[Dict[str, Any]]] = [
     [
         {"POS": "VERB", "LEMMA": "be"},
         {"LOWER": {"IN": ["independent", "also"]}, "OP": "?"},
@@ -36,21 +20,55 @@ PATTERNS_IGNORED_WORDS = [
 ]
 
 
-
 INCREASE_NOUNS = ["increase", "increases", "increment", "increments"]
-DECREASE_NOUNS = ["decrease", "decreases", "decrement", "decrements","reduction"]
-NEUTRAL_NOUNS = ["development","variety","presence"]
+DECREASE_NOUNS = ["decrease", "decreases", "decrement", "decrements", "reduction"]
+NEUTRAL_NOUNS = ["development", "variety", "presence"]
 QUANTIFIER_NOUNS = INCREASE_NOUNS + DECREASE_NOUNS + NEUTRAL_NOUNS
 
 
-INCREASE_ADJECTIVES = ["higher", "increased","increasing", "heightened","high","significant","better","greater","prolonged"]
-DECREASE_ADJECTIVES = ["lower", "decreased", "lowered", "low", "reduced", "poorer","worse","poor"]
+INCREASE_ADJECTIVES = [
+    "higher",
+    "increased",
+    "increasing",
+    "heightened",
+    "high",
+    "significant",
+    "better",
+    "greater",
+    "prolonged",
+]
+DECREASE_ADJECTIVES = [
+    "lower",
+    "decreased",
+    "lowered",
+    "low",
+    "reduced",
+    "poorer",
+    "worse",
+    "poor",
+]
 NEUTRAL_ADJECTIVES = ["certain", "some"]
 MODIFIER_ADJECTIVES = DECREASE_ADJECTIVES + INCREASE_ADJECTIVES + NEUTRAL_ADJECTIVES
 
 
-QTY_NOUNS = ["rate", "rates", "amount", "amounts", "level", "levels", "incidence", "risk", "risks", "severity", "odds","variety", "yield","plethora","prevalence"]
-QTY_NOUNS_EXPERIMENTAL = [ "use", "usage", "aspects","disruption"]
+QTY_NOUNS = [
+    "rate",
+    "rates",
+    "amount",
+    "amounts",
+    "level",
+    "levels",
+    "incidence",
+    "risk",
+    "risks",
+    "severity",
+    "odds",
+    "variety",
+    "yield",
+    "plethora",
+    "prevalence",
+]
+QTY_NOUNS_EXPERIMENTAL = ["use", "usage", "aspects", "disruption"]
 
 BREAKWORDS = ["readmission", "mortality", "morbidity", "compared"]
 

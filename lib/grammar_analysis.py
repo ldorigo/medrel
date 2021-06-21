@@ -13,15 +13,16 @@ from spacy.lang.en import LEMMA_EXC, LEMMA_INDEX, LEMMA_RULES, English
 from spacy.lemmatizer import Lemmatizer
 from spacy.matcher import Matcher
 from spacy.tokens import Doc, Span, Token
+
 # from termcolor import colored
 # from tqdm.auto import tqdm
 
-import constants
+import lib.constants as constants
 
 # import QuickUMLS.toolbox as tb
-from QuickUMLS.quickumls import QuickUMLS
+# from QuickUMLS.quickumls import QuickUMLS
 
-from utils import QUICKUMLS_LOCATION_WIDGET
+# from utils import QUICKUMLS_LOCATION_WIDGET
 
 lemmatizer = Lemmatizer(LEMMA_INDEX, LEMMA_EXC, LEMMA_RULES)
 
@@ -134,31 +135,32 @@ def pretty_print_relation(r):
         )
     )
 
-def get_relation_generator(nlp,path=None):
+
+def get_relation_generator(nlp, path=None):
     if path is None:
         path = "./data/sessions/small_subset/relevant_sentences_plaintext.txt"
     with open(path, "r") as f:
         for sentjson in f:
             obj = json.loads(sentjson)
-            sent = obj['sentence']
-            pmid = obj['pmid']
+            sent = obj["sentence"]
+            pmid = obj["pmid"]
             d = nlp(sent)
             try:
-                res = parse_sentence(d,nlp)
+                res = parse_sentence(d, nlp)
             except:
                 logging.error("encountered error when parsing:")
                 logging.error("'{}'".format(d))
                 res = []
             if res:
-                yield((d,pmid,res))
+                yield ((d, pmid, res))
 
 
 def surround_ents(doc: Doc) -> str:
     """Surround entities in a doc with ** for lightweight display (without displacy)
-    
+
     Args:
         doc (Doc): Spacy DOC containing named entities
-    
+
     Returns:
         str: string of the doc with entities surrounded by **
     """
@@ -179,8 +181,7 @@ def surround_ents(doc: Doc) -> str:
 
 
 def has_modifier_adjective(noun: NounToken) -> bool:
-    """Check wether the noun is modifier by a single amount/intensity modifier ("higher","increased",...)
-    """
+    """Check wether the noun is modifier by a single amount/intensity modifier ("higher","increased",...)"""
 
     adjs = get_noun_adjectives_roots(noun)
     if len(adjs) == 1:
@@ -211,7 +212,7 @@ def has_nmod(noun_token: NounToken) -> bool:
 
 
 def has_conjunctions(tok: Token) -> bool:
-    """ Check if the token given as arguments has conjunctions. 
+    """Check if the token given as arguments has conjunctions.
     Note: this only returns true if the conjunctions are on a lower level in the parse tree.
     """
     if get_conjunctions(tok):
@@ -220,8 +221,7 @@ def has_conjunctions(tok: Token) -> bool:
 
 
 def has_adjectives(noun_token: NounToken) -> bool:
-    """ Check if the noun is modifier by one or more adjectives.
-    """
+    """Check if the noun is modifier by one or more adjectives."""
     assert (
         noun_token.pos_ in constants.NOUN_POS_TAGS
     ), "Error: trying to check adjectives of something that isn't a noun"
@@ -232,8 +232,7 @@ def has_adjectives(noun_token: NounToken) -> bool:
 
 
 def is_compound_noun(noun_token: NounToken) -> bool:
-    """ Check if the token is the root of a compound noun.
-    """
+    """Check if the token is the root of a compound noun."""
     assert (
         noun_token.pos_ in constants.NOUN_POS_TAGS
     ), "Error: trying to check if something that isn't a noun it a compound noun"
@@ -252,15 +251,16 @@ def is_compound_noun(noun_token: NounToken) -> bool:
 
 def get_modifier_adjective(noun: NounToken) -> Optional[Tuple[AdjToken, Modifier]]:
     """Get the adjective that modifies the quantity-indicating noun given as argument ("levels","amount",...), as well as its direction (increase, lower, or neutral )
-    
+
     Args:
         noun (NounToken): A quantity-indicating noun
-    
+
     Returns:
         Optional[Tuple[AdjToken, Modifier]]: Tuple of (modifying adjective, direction)
     """
     assert (
-        noun.lower_ in constants.QTY_NOUNS or noun.lower_ in constants.QTY_NOUNS_EXPERIMENTAL
+        noun.lower_ in constants.QTY_NOUNS
+        or noun.lower_ in constants.QTY_NOUNS_EXPERIMENTAL
     ), "Error: Trying to get quantity modifier of a noun that is not a quantity indicator"
     logwithdepth("Getting modifier adjective of quantity noun '{}'.".format(noun))
     adjs = get_noun_adjectives_roots(noun)
@@ -281,8 +281,7 @@ def get_modifier_adjective(noun: NounToken) -> Optional[Tuple[AdjToken, Modifier
 
 
 def get_conjunctions(token: Token) -> List[Token]:
-    """Get the conjunctions of the given token that are lower than it in the dependency parse tree.
-    """
+    """Get the conjunctions of the given token that are lower than it in the dependency parse tree."""
     logwithdepth("Getting conjunctions for token: '{}'".format(token))
     res = []
     for t in token.doc:
@@ -332,8 +331,7 @@ def get_nmod_prep(noun_token: Token) -> Optional[Token]:
 
 
 def get_closest_adjective(noun_token: NounToken) -> Optional[AdjToken]:
-    """Return the closest adjective of the given noun.
-    """
+    """Return the closest adjective of the given noun."""
     assert (
         noun_token.pos_ in constants.NOUN_POS_TAGS
     ), "Error: trying to get adjectives of something that isn't a noun"
@@ -345,8 +343,7 @@ def get_closest_adjective(noun_token: NounToken) -> Optional[AdjToken]:
 
 
 def get_noun_adjectives_roots(noun_token: NounToken) -> List[AdjToken]:
-    """Get a list of the roots of the adjectival modifiers of the given noun.
-    """
+    """Get a list of the roots of the adjectival modifiers of the given noun."""
     logwithdepth("Getting all first-level adjectives of noun: '{}'.".format(noun_token))
     assert (
         noun_token.pos_ in constants.NOUN_POS_TAGS
@@ -361,7 +358,7 @@ def get_noun_adjectives_roots(noun_token: NounToken) -> List[AdjToken]:
 
 
 def resolve_compound_noun(noun_token: NounToken) -> List[NounToken]:
-    """Given a noun, return a list comprising the full compound noun corresponding to it. 
+    """Given a noun, return a list comprising the full compound noun corresponding to it.
     If the noun is not compound, the list only contains the noun itself.
     """
     logwithdepth("Resolving compound noun with root: '{}'".format(noun_token))
@@ -393,9 +390,9 @@ def demultiply_noun_adjectives(
 ) -> Demultiplication:
     """Return a list of all the distinct semantic meanings that can be derived from a noun and its adjectives.
 
-    Example: "big and small young or old apples" -> 
+    Example: "big and small young or old apples" ->
         [
-            [apples], 
+            [apples],
             [young, apples], [old, apples], [big, apples], [small, apples],
             [big, young, apples], [big, old, apples], [small, young, apples], [small, old, apples]
         ]
@@ -420,25 +417,33 @@ def demultiply_noun_adjectives(
     logwithdepth("Generated adjective sequences: {}".format(results))
     return results
 
+
 def adjectives_to_modifiers(meanings: Meanings) -> Meanings:
-    """Check the given list of meanings and replace inner adjectives that give a quantity information (higher, stronger, etc.) by outer modifiers
-    """
+    """Check the given list of meanings and replace inner adjectives that give a quantity information (higher, stronger, etc.) by outer modifiers"""
     logwithdepth("Checking adjective sequences for modifiers: {}".format(meanings))
-    newmeanings : Meanings = []
+    newmeanings: Meanings = []
     for meaning in meanings:
         assert meaning is not None
         if meaning[0][0].lower_ in constants.MODIFIER_ADJECTIVES:
-            assert meaning[1] == Modifier.NEUTRAL, "Resolving adjectives of a non-neutral sign"
+            assert (
+                meaning[1] == Modifier.NEUTRAL
+            ), "Resolving adjectives of a non-neutral sign"
 
             if meaning[0][0].lower_ in constants.INCREASE_ADJECTIVES:
                 newmeanings.append((meaning[0][1:], Modifier.POSITIVE))
-                logwithdepth("Changed adjective '{}' to positive modifier".format(meaning[0][0]))
+                logwithdepth(
+                    "Changed adjective '{}' to positive modifier".format(meaning[0][0])
+                )
             elif meaning[0][0].lower_ in constants.DECREASE_ADJECTIVES:
                 newmeanings.append((meaning[0][1:], Modifier.NEGATIVE))
-                logwithdepth("Changed adjective '{}' to negative modifier".format(meaning[0][0]))
+                logwithdepth(
+                    "Changed adjective '{}' to negative modifier".format(meaning[0][0])
+                )
             elif meaning[0][0].lower_ in constants.NEUTRAL_ADJECTIVES:
                 newmeanings.append((meaning[0][1:], Modifier.NEUTRAL))
-                logwithdepth("Changed adjective '{}' to neutral modifier".format(meaning[0][0]))
+                logwithdepth(
+                    "Changed adjective '{}' to neutral modifier".format(meaning[0][0])
+                )
             else:
                 assert False, "ERROR: shouldn't happen"
         else:
@@ -474,11 +479,10 @@ def resolve_noun_modifier_clause(
         modified_noun.pos_ in constants.NOUN_POS_TAGS
     ), "Error: Trying to resolve a noun clause with non-noun root"
 
-
     subclause_root = get_nmod_root(modified_noun)
 
     if subclause_root is None:
-        meanings:Meanings = [(a, external_modifier) for a in adj_demultiplications]
+        meanings: Meanings = [(a, external_modifier) for a in adj_demultiplications]
         return adjectives_to_modifiers(meanings)
     if subclause_root.lower in constants.BREAKWORDS:
         logwithdepth(
@@ -487,12 +491,15 @@ def resolve_noun_modifier_clause(
         return [(a, external_modifier) for a in adj_demultiplications]
 
     # If the noun modified by the subclause is a noun expressing quandity:
-    if modified_noun.lower_ in constants.QTY_NOUNS or modified_noun.lower_ in constants.QTY_NOUNS_EXPERIMENTAL :
+    if (
+        modified_noun.lower_ in constants.QTY_NOUNS
+        or modified_noun.lower_ in constants.QTY_NOUNS_EXPERIMENTAL
+    ):
         logwithdepth(
-                "Detected subclause that is quantified by external uantity noun + adjective ({}).".format(
-                    modified_noun
-                )
+            "Detected subclause that is quantified by external uantity noun + adjective ({}).".format(
+                modified_noun
             )
+        )
         if has_modifier_adjective(modified_noun):
             res = get_modifier_adjective(modified_noun)
             ad, mod = res
@@ -506,8 +513,8 @@ def resolve_noun_modifier_clause(
             logwithdepth("Got no modifier adjective.")
             final = parse_noun_clause(subclause_root, external_modifier)
     # elif modified_noun.lower_ in constants.QTY_NOUNS_EXPERIMENTAL:
-        # logwithdepth("Found subclause of experimental quantity noun: '{}'".format(modified_noun))
-        # final = parse_noun_clause(subclause_root, external_modifier)
+    # logwithdepth("Found subclause of experimental quantity noun: '{}'".format(modified_noun))
+    # final = parse_noun_clause(subclause_root, external_modifier)
     # If the noun itself is a quantifier ("increase", "decreases")
     elif modified_noun.lower_ in constants.QUANTIFIER_NOUNS:
         logwithdepth(
@@ -676,14 +683,15 @@ def is_parsable_sentence(doc: Doc, nlp: English) -> bool:
     logwithdepth("Sentence was deemed parsable.")
     return True
 
+
 def filter_duplicate_relations(rels: Relations) -> Relations:
     logwithdepth("Filtering relations:")
 
     for i, rel in enumerate(rels):
         logwithdepth("  {}. {} ".format(i, rel))
-    unique_ids = set(range(0,len(rels)))
+    unique_ids = set(range(0, len(rels)))
     unique_rels: Relations = []
-    
+
     for i, rel in enumerate(rels):
         j = i + 1
         for other_rel in rels[i + 1 :]:
@@ -693,42 +701,58 @@ def filter_duplicate_relations(rels: Relations) -> Relations:
                 # First sign and relation type are identical
                 if rel[2][0] == other_rel[2][0]:
                     # second sign is also equal
-                    if rel[2][1] in [Modifier.POSITIVE, Modifier.NEGATIVE] and other_rel[2][1] == Modifier.NEUTRAL:
+                    if (
+                        rel[2][1] in [Modifier.POSITIVE, Modifier.NEGATIVE]
+                        and other_rel[2][1] == Modifier.NEUTRAL
+                    ):
                         try:
                             unique_ids.remove(j)
                         except KeyError:
                             pass
-                    elif other_rel[2][1] in [Modifier.POSITIVE, Modifier.NEGATIVE] and rel[2][1] == Modifier.NEUTRAL:
+                    elif (
+                        other_rel[2][1] in [Modifier.POSITIVE, Modifier.NEGATIVE]
+                        and rel[2][1] == Modifier.NEUTRAL
+                    ):
                         try:
                             unique_ids.remove(i)
                         except KeyError:
                             pass
                     else:
-                        assert False, "Error: relations are neither equal nor different??"
+                        assert (
+                            False
+                        ), "Error: relations are neither equal nor different??"
             elif rel[2] == other_rel[2] and rel[1] == other_rel[1]:
                 # Second sign and relation type are identical
                 if rel[0][0] == other_rel[0][0]:
                     # second sign is also equal
-                    if rel[0][1] in [Modifier.POSITIVE, Modifier.NEGATIVE] and other_rel[0][1] == Modifier.NEUTRAL:
+                    if (
+                        rel[0][1] in [Modifier.POSITIVE, Modifier.NEGATIVE]
+                        and other_rel[0][1] == Modifier.NEUTRAL
+                    ):
                         try:
                             unique_ids.remove(j)
                         except KeyError:
                             pass
-                    elif other_rel[0][1] in [Modifier.POSITIVE, Modifier.NEGATIVE] and rel[0][1] == Modifier.NEUTRAL:
+                    elif (
+                        other_rel[0][1] in [Modifier.POSITIVE, Modifier.NEGATIVE]
+                        and rel[0][1] == Modifier.NEUTRAL
+                    ):
                         try:
                             unique_ids.remove(i)
                         except KeyError:
                             pass
                     else:
-                        assert False, "Error: relations are neither equal nor different??"
+                        assert (
+                            False
+                        ), "Error: relations are neither equal nor different??"
             j += 1
 
-            
     logwithdepth("Kept relations {}".format(unique_ids))
 
     for i in unique_ids:
         unique_rels.append(rels[i])
     return unique_rels
+
 
 def most_precise_relations(rels: Relations) -> Relations:
     res = [rels[0]]
@@ -747,9 +771,8 @@ def most_precise_relations(rels: Relations) -> Relations:
     return res
 
 
-
 def parse_sentence(doc: Doc, nlp: English) -> Relations:
-    """Parse a full sentence and return a list of all relations 
+    """Parse a full sentence and return a list of all relations
 
     Args:
         doc (Doc): Spacy doc containing the (spacy-)parsed sentence
@@ -774,9 +797,9 @@ def parse_sentence(doc: Doc, nlp: English) -> Relations:
         return []
 
     left_root = left_side.root
-    rel_indicator_verb = [w for w in relation_indicator if w.lemma_ == 'associate'][0]
+    rel_indicator_verb = [w for w in relation_indicator if w.lemma_ == "associate"][0]
     right_root = list(rel_indicator_verb.rights)[0]
-    
+
     # right_root = right_side.root
 
     l_ents = parse_noun_clause(left_root)
@@ -786,9 +809,10 @@ def parse_sentence(doc: Doc, nlp: English) -> Relations:
         for r_ent in r_ents:
             relations.append((l_ent, Modifier.NEUTRAL, r_ent))
 
-    ## We remove relations that are identical to each other except for a sign modifier. 
+    ## We remove relations that are identical to each other except for a sign modifier.
     relations_unique = filter_duplicate_relations(relations)
     return relations_unique
+
 
 # def get_relations_generator(sentence_generator: Generator[Union[str,Doc], None, None],nlp:English) -> Generator[Relations, None, None]:
 #     for sent in sentence_generator:
@@ -797,7 +821,7 @@ def parse_sentence(doc: Doc, nlp: English) -> Relations:
 #             relations = parse_sentence(sent, nlp)
 #             if relations:
 #                 if relations[0][0] and relations[2][0]:
-#                     yield relations 
+#                     yield relations
 
 
 if __name__ == "__main__":
@@ -815,4 +839,3 @@ if __name__ == "__main__":
     # p = parse_sentence(ns, nlp)
     # for r in p:
     #     pretty_print_relation(r)
-
