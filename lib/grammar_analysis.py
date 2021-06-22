@@ -1,16 +1,16 @@
-import doctest
+# import doctest
 import inspect
 import logging
 from enum import Enum
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, cast
 import json
-import dataset
 import spacy
 from spacy import displacy
+from spacy.language import Language
 
 # from spacy.attrs import ENT_IOB, ENT_TYPE
-from spacy.lang.en import LEMMA_EXC, LEMMA_INDEX, LEMMA_RULES, English
-from spacy.lemmatizer import Lemmatizer
+# from spacy.lang.en import LEMMA_EXC, LEMMA_INDEX, LEMMA_RULES, English
+# from spacy.lemmatizer import Lemmatizer
 from spacy.matcher import Matcher
 from spacy.tokens import Doc, Span, Token
 
@@ -24,7 +24,7 @@ import lib.constants as constants
 
 # from utils import QUICKUMLS_LOCATION_WIDGET
 
-lemmatizer = Lemmatizer(LEMMA_INDEX, LEMMA_EXC, LEMMA_RULES)
+# lemmatizer = Lemmatizer(LEMMA_INDEX, LEMMA_EXC, LEMMA_RULES)
 
 
 class Modifier(Enum):
@@ -63,18 +63,18 @@ logging.addLevelName(5, "TRACE")
 logging.basicConfig(format="%(message)s")
 
 
-def logwithdepth(message):
+def logwithdepth(message: str):
     if logger.getEffectiveLevel() == 4:
         depth = len(inspect.stack()) - 9
         logger.log(5, "→→" * depth + " " + message)
 
 
-def get_nlp(model_path: str = None) -> English:
-    if model_path is None:
-        model_path = "./data/annotate/scispacy_myner/model-best/"
-    n = spacy.load(model_path)
-    print("Loaded Model")
-    return n
+# def get_nlp(model_path: str = None) -> English:
+#     if model_path is None:
+#         model_path = "./data/annotate/scispacy_myner/model-best/"
+#     n = spacy.load(model_path)
+#     print("Loaded Model")
+#     return n
 
 
 ############################
@@ -82,13 +82,13 @@ def get_nlp(model_path: str = None) -> English:
 ############################
 
 
-def get_matchers(nlp: English) -> Dict[str, Matcher]:
+def get_matchers(nlp: Language) -> Dict[str, Matcher]:
     matcher_relations = Matcher(nlp.vocab)
     matcher_negations = Matcher(nlp.vocab)
     matcher_relations.add(
-        "neutral_relation_indicator", None, *constants.PATTERNS_NEUTRAL_RELATIONS
+        "neutral_relation_indicator", constants.PATTERNS_NEUTRAL_RELATIONS
     )
-    matcher_negations.add("negation", None, *constants.PATTERNS_NEGATION)
+    matcher_negations.add("negation", constants.PATTERNS_NEGATION)
 
     return {"relations": matcher_relations, "negations": matcher_negations}
 
@@ -96,11 +96,11 @@ def get_matchers(nlp: English) -> Dict[str, Matcher]:
 ############################
 ## Utility functions #######
 ############################
-def renderent(doc):
+def renderent(doc: Doc):
     displacy.render(doc, style="ent", jupyter=True)
 
 
-def renderdep(doc):
+def renderdep(doc: Doc):
     displacy.render(
         doc,
         style="dep",
@@ -109,7 +109,7 @@ def renderdep(doc):
     )
 
 
-def mod_to_symbol(mod):
+def mod_to_symbol(mod: Modifier):
     if mod == Modifier.NEUTRAL:
         return "~"
     elif mod == Modifier.NEGATIVE:
@@ -118,7 +118,7 @@ def mod_to_symbol(mod):
         return "↑"
 
 
-def get_pretty_rel_indicator(r):
+def get_pretty_rel_indicator(r: Relation):
     if r[1] == Modifier.NEUTRAL:
         return "<->"
     elif r[1] == Modifier.NEGATIVE:
@@ -127,7 +127,7 @@ def get_pretty_rel_indicator(r):
         return "-->"
 
 
-def pretty_print_relation(r):
+def pretty_print_relation(r: Relation):
     link = get_pretty_rel_indicator(r)
     print(
         "[{} ({})] {} [{} ({})]".format(
@@ -136,7 +136,7 @@ def pretty_print_relation(r):
     )
 
 
-def get_relation_generator(nlp, path=None):
+def get_relation_generator(nlp: Language, path: str = None):
     if path is None:
         path = "./data/sessions/small_subset/relevant_sentences_plaintext.txt"
     with open(path, "r") as f:
@@ -164,7 +164,7 @@ def surround_ents(doc: Doc) -> str:
     Returns:
         str: string of the doc with entities surrounded by **
     """
-    res = []
+    res: List[str] = []
     for tok in doc:
         if tok.ent_iob_ == "B":
             res.append("**")
@@ -283,7 +283,7 @@ def get_modifier_adjective(noun: NounToken) -> Optional[Tuple[AdjToken, Modifier
 def get_conjunctions(token: Token) -> List[Token]:
     """Get the conjunctions of the given token that are lower than it in the dependency parse tree."""
     logwithdepth("Getting conjunctions for token: '{}'".format(token))
-    res = []
+    res: List[Token] = []
     for t in token.doc:
         if token in t.conjuncts and t.head == token:
             res.append(t)
@@ -306,12 +306,12 @@ def get_nmod_root(noun_token: NounToken) -> Optional[NounToken]:
     for tok in noun_token.doc:
         if tok.dep_ == "nmod" and tok.head == noun_token:
             logwithdepth("Got nmod root of '{}': '{}'".format(noun_token, tok))
-            return tok
+            return cast(NounToken, tok)
     logwithdepth("Found no root for nmod of {}.".format(noun_token))
     return None
 
 
-def get_nmod_prep(noun_token: Token) -> Optional[Token]:
+def get_nmod_prep(noun_token: NounToken) -> Optional[Token]:
     """Get the preposition that links the noun given as argument to its noun modifier subclause
 
     >>> doc = nlp("Within invasive disease, seed localization was associated with lower rates of margin positivity.")
@@ -339,7 +339,7 @@ def get_closest_adjective(noun_token: NounToken) -> Optional[AdjToken]:
     for tok in noun_token.doc[0 : noun_token.i]:
         if tok.dep_ == "amod" and tok.head == noun_token:
             closest = tok
-    return closest
+    return cast(AdjToken, closest)
 
 
 def get_noun_adjectives_roots(noun_token: NounToken) -> List[AdjToken]:
@@ -349,10 +349,10 @@ def get_noun_adjectives_roots(noun_token: NounToken) -> List[AdjToken]:
         noun_token.pos_ in constants.NOUN_POS_TAGS
     ), "Error: trying to get adjectives of something that isn't a noun"
 
-    adjs = []
+    adjs: List[AdjToken] = []
     for tok in noun_token.doc[0 : noun_token.i]:
         if tok.dep_ == "amod" and tok.head == noun_token:
-            adjs.append(tok)
+            adjs.append(cast(AdjToken, tok))
     logwithdepth("Found 1st-level adjectives: {}.".format(adjs))
     return adjs
 
@@ -366,10 +366,10 @@ def resolve_compound_noun(noun_token: NounToken) -> List[NounToken]:
         noun_token.pos_ in constants.NOUN_POS_TAGS
     ), "Error: trying to resolve a compound noun on something that isn't a noun"
 
-    noun_group = []
+    noun_group: List[NounToken] = []
     for tok in noun_token.doc[0 : noun_token.i]:
         if tok.dep_ == "compound" and tok.head == noun_token:
-            noun_group.append(tok)
+            noun_group.append(cast(NounToken, tok))
     noun_group.append(noun_token)
     logwithdepth("Resolved compound noun to: {}".format(noun_group))
     return noun_group
@@ -380,7 +380,9 @@ def resolve_adjective_conjunctions(adjective_token: AdjToken) -> List[Token]:
     assert (
         adjective_token.pos_ == "ADJ" or adjective_token.dep_ == "amod"
     ), "Error: trying to resolve adjective conjunctions on something that isn't an adjective."
-    res = [adjective_token] + get_conjunctions(adjective_token)
+    res: List[Token] = [cast(Token, adjective_token)] + get_conjunctions(
+        adjective_token
+    )
     logwithdepth("Found conjunctions: {}.".format(res))
     return res
 
@@ -406,10 +408,10 @@ def demultiply_noun_adjectives(
     full_adjectives = [resolve_adjective_conjunctions(a) for a in adjectives]
     reversed_full = full_adjectives[::-1]
     ## Example: [["yellow","green","red"], ["small","big"]]
-    results = [full_noun]
+    results: List[List[Token]] = [cast(Token, full_noun)]
     for adj_level in reversed_full:
         # Ex.: ["yellow","green","red"]
-        temp = [[a] + r for a in adj_level for r in results]
+        temp = [[a] + cast(List[Token], r) for a in adj_level for r in results]
         results += temp
 
     results.sort(key=len, reverse=True)
@@ -625,7 +627,7 @@ def parse_noun_clause(
     # return [(adj_demultiplications, external_modifier)]
 
 
-def get_relation_indicators(doc: Doc, nlp: English) -> List[Span]:
+def get_relation_indicators(doc: Doc, nlp: Language) -> List[Span]:
     """Return any relation indicators in the doc.
 
     Args:
@@ -643,7 +645,7 @@ def get_relation_indicators(doc: Doc, nlp: English) -> List[Span]:
     return relation_markers
 
 
-def is_parsable_sentence(doc: Doc, nlp: English) -> bool:
+def is_parsable_sentence(doc: Doc, nlp: Language) -> bool:
     """Check wether the sentence in the doc has a form that is currently parseable by this library.
 
     Args:
@@ -674,12 +676,12 @@ def is_parsable_sentence(doc: Doc, nlp: English) -> bool:
             "Discarded sentence because it contains no relations: \n {}".format(doc)
         )
         return False
-    elif len(doc.ents) != 2:
-        logger.debug(
-            "Discarded sentence because it contains more or less than two entities: "
-        )
-        logger.debug(surround_ents(doc))
-        return False
+    # elif len(doc.ents) != 2:
+    #     logger.debug(
+    #         "Discarded sentence because it contains more or less than two entities: "
+    #     )
+    #     logger.debug(surround_ents(doc))
+    #     return False
     logwithdepth("Sentence was deemed parsable.")
     return True
 
@@ -771,7 +773,7 @@ def most_precise_relations(rels: Relations) -> Relations:
     return res
 
 
-def parse_sentence(doc: Doc, nlp: English) -> Relations:
+def parse_sentence(doc: Doc, nlp: Language) -> Relations:
     """Parse a full sentence and return a list of all relations
 
     Args:
@@ -790,14 +792,17 @@ def parse_sentence(doc: Doc, nlp: English) -> Relations:
     # left_side: Span = doc[0:relation_indicator.start]
     # right_side: Span = doc[relation_indicator.end:-1]
 
-    try:
-        left_side = [e for e in doc.ents if e.end <= relation_indicator.start][0]
-        right_side = [e for e in doc.ents if e.start >= relation_indicator.end][0]
-    except IndexError:
-        return []
+    # try:
+    #     left_side = [e for e in doc.ents if e.end <= relation_indicator.start][0]
+    #     right_side = [e for e in doc.ents if e.start >= relation_indicator.end][0]
+    # except IndexError:
+    #     return []
 
-    left_root = left_side.root
     rel_indicator_verb = [w for w in relation_indicator if w.lemma_ == "associate"][0]
+    # left_root = left_side.root
+    left_root = [
+        tok for tok in rel_indicator_verb.children if tok.dep_ in ["nsubjpass", "subj"]
+    ][0]
     right_root = list(rel_indicator_verb.rights)[0]
 
     # right_root = right_side.root
@@ -830,12 +835,12 @@ if __name__ == "__main__":
 
     logger.setLevel(4)
 
-    nlp = get_nlp()
-    resiter = get_relation_generator(nlp)
-    next(resiter)
+    nlp = spacy.load("en_core_sci_md")
+    # resiter = get_relation_generator(nlp)
+    # next(resiter)
 
-    # ns = nlp(complex_sentence)
+    ns = nlp(complex_sentence)
     # # demultiply_noun_adjectives(ns[-2], [ns[-2]])
-    # p = parse_sentence(ns, nlp)
-    # for r in p:
-    #     pretty_print_relation(r)
+    p = parse_sentence(ns, nlp)
+    for r in p:
+        pretty_print_relation(r)
