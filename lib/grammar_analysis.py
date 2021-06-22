@@ -127,32 +127,31 @@ def get_pretty_rel_indicator(r: Relation):
         return "-->"
 
 
-def pretty_print_relation(r: Relation):
+def pretty_print_relation(r: Relation) -> str:
     link = get_pretty_rel_indicator(r)
-    print(
-        "[{} ({})] {} [{} ({})]".format(
-            r[0][0], mod_to_symbol(r[0][1]), link, r[2][0], mod_to_symbol(r[2][1])
-        )
+    result = "[{} ({})] {} [{} ({})]".format(
+        r[0][0], mod_to_symbol(r[0][1]), link, r[2][0], mod_to_symbol(r[2][1])
     )
+    return result
 
 
-def get_relation_generator(nlp: Language, path: str = None):
-    if path is None:
-        path = "./data/sessions/small_subset/relevant_sentences_plaintext.txt"
-    with open(path, "r") as f:
-        for sentjson in f:
-            obj = json.loads(sentjson)
-            sent = obj["sentence"]
-            pmid = obj["pmid"]
-            d = nlp(sent)
-            try:
-                res = parse_sentence(d, nlp)
-            except:
-                logging.error("encountered error when parsing:")
-                logging.error("'{}'".format(d))
-                res = []
-            if res:
-                yield ((d, pmid, res))
+# def get_relation_generator(nlp: Language, path: str = None):
+#     if path is None:
+#         path = "./data/sessions/small_subset/relevant_sentences_plaintext.txt"
+#     with open(path, "r") as f:
+#         for sentjson in f:
+#             obj = json.loads(sentjson)
+#             sent = obj["sentence"]
+#             pmid = obj["pmid"]
+#             d = nlp(sent)
+#             try:
+#                 res = parse_sentence(d, nlp)
+#             except:
+#                 logging.error("encountered error when parsing:")
+#                 logging.error("'{}'".format(d))
+#                 res = []
+#             if res:
+#                 yield ((d, pmid, res))
 
 
 def surround_ents(doc: Doc) -> str:
@@ -408,7 +407,7 @@ def demultiply_noun_adjectives(
     full_adjectives = [resolve_adjective_conjunctions(a) for a in adjectives]
     reversed_full = full_adjectives[::-1]
     ## Example: [["yellow","green","red"], ["small","big"]]
-    results: List[List[Token]] = [cast(Token, full_noun)]
+    results: List[List[Token]] = [cast(List[Token], full_noun)]
     for adj_level in reversed_full:
         # Ex.: ["yellow","green","red"]
         temp = [[a] + cast(List[Token], r) for a in adj_level for r in results]
@@ -835,12 +834,12 @@ if __name__ == "__main__":
 
     logger.setLevel(4)
 
-    nlp = spacy.load("en_core_sci_md")
     # resiter = get_relation_generator(nlp)
     # next(resiter)
 
-    ns = nlp(complex_sentence)
     # # demultiply_noun_adjectives(ns[-2], [ns[-2]])
+    nlp = spacy.load("en_core_sci_md")
+    ns = nlp(complex_sentence)
     p = parse_sentence(ns, nlp)
     for r in p:
-        pretty_print_relation(r)
+        print(pretty_print_relation(r))
