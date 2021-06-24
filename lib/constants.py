@@ -52,21 +52,23 @@ MODIFIER_ADJECTIVES = DECREASE_ADJECTIVES + INCREASE_ADJECTIVES + NEUTRAL_ADJECT
 
 
 QTY_NOUNS = [
-    "rate",
-    "rates",
     "amount",
     "amounts",
+    "concentrations",
+    "incidence",
     "level",
     "levels",
-    "incidence",
+    "odds",
+    "plethora",
+    "prevalence",
+    "proportion",
+    "rate",
+    "rates",
     "risk",
     "risks",
     "severity",
-    "odds",
     "variety",
     "yield",
-    "plethora",
-    "prevalence",
 ]
 QTY_NOUNS_EXPERIMENTAL = ["use", "usage", "aspects", "disruption"]
 
