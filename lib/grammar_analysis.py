@@ -2,11 +2,10 @@
 import inspect
 import logging
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, cast
-import json
+from typing import Dict, Generator, Iterable, List, Optional, Tuple, cast
 import spacy
 from spacy import displacy
-from spacy.language import Language
+from spacy import tokens
 
 # from spacy.attrs import ENT_IOB, ENT_TYPE
 # from spacy.lang.en import LEMMA_EXC, LEMMA_INDEX, LEMMA_RULES, English
@@ -18,6 +17,7 @@ from spacy.tokens import Doc, Span, Token
 # from tqdm.auto import tqdm
 
 import lib.constants as constants
+from spacy.vocab import Vocab
 
 # import QuickUMLS.toolbox as tb
 # from QuickUMLS.quickumls import QuickUMLS
@@ -82,9 +82,9 @@ def logwithdepth(message: str):
 ############################
 
 
-def get_matchers(nlp: Language) -> Dict[str, Matcher]:
-    matcher_relations = Matcher(nlp.vocab)
-    matcher_negations = Matcher(nlp.vocab)
+def get_matchers(vocab: Vocab) -> Dict[str, Matcher]:
+    matcher_relations = Matcher(vocab)
+    matcher_negations = Matcher(vocab)
     matcher_relations.add(
         "neutral_relation_indicator", constants.PATTERNS_NEUTRAL_RELATIONS
     )
@@ -455,7 +455,7 @@ def adjectives_to_modifiers(meanings: Meanings) -> Meanings:
 def resolve_noun_modifier_clause(
     modified_noun: NounToken,
     adj_demultiplications: Demultiplication,
-    external_modifier: Modifier,
+    external_modifier: Optional[Modifier],
 ) -> Meanings:
     """[summary]
 
@@ -503,6 +503,7 @@ def resolve_noun_modifier_clause(
         )
         if has_modifier_adjective(modified_noun):
             res = get_modifier_adjective(modified_noun)
+            assert res, "Shouldn't happen!!"
             ad, mod = res
 
             logwithdepth(" ... which is modified by the adjective '{}'".format(ad))
@@ -566,7 +567,7 @@ def resolve_noun_modifier_clause(
 
 
 def parse_noun_clause(
-    root: NounToken, external_modifier: Modifier = Modifier.NEUTRAL
+    root: NounToken, external_modifier: Optional[Modifier] = Modifier.NEUTRAL
 ) -> Meanings:
     """Parse a clause whose root is a noun (usually a sign as recognized by the statistical model),
     and return all meanings (=signs) that were found in it.
@@ -584,9 +585,9 @@ def parse_noun_clause(
             root, external_modifier
         )
     )
-    assert (
-        root.pos_ in constants.NOUN_POS_TAGS
-    ), "Error: Trying to parse a noun subsentence with non-noun root: {}".format(root)
+    # assert (
+    #     root.pos_ in constants.NOUN_POS_TAGS
+    # ), "Error: Trying to parse a noun subsentence with non-noun root: {}".format(root)
 
     if root.lower_ in constants.BREAKWORDS:
         logwithdepth("Root of noun clause is a break work. Not going further.")
@@ -620,31 +621,31 @@ def parse_noun_clause(
             )
         )
         for c in conjs:
-            results += parse_noun_clause(c)
+            if c.dep_ in constants.NOUN_POS_TAGS:
+                results += parse_noun_clause(c)
     logwithdepth("Extracted meanings from noun clause: {}.".format(results))
     return results
     # return [(adj_demultiplications, external_modifier)]
 
 
-def get_relation_indicators(doc: Doc, nlp: Language) -> List[Span]:
+def get_relation_indicators(doc: Doc) -> List[Span]:
     """Return any relation indicators in the doc.
 
     Args:
         doc (Doc): [description]
-        nlp ([type]): [description]
 
     Returns:
         List[Span]: list of Spans containing relation indicators
     """
     logwithdepth("Getting relation indicators of sentence.")
-    matchers = get_matchers(nlp)
+    matchers = get_matchers(doc.vocab)
     relation_matches = matchers["relations"](doc)
     relation_markers = [doc[i:j] for _, i, j in relation_matches]
     logwithdepth("Found relation markers: {}.".format(relation_markers))
     return relation_markers
 
 
-def is_parsable_sentence(doc: Doc, nlp: Language) -> bool:
+def is_parsable_sentence(doc: Doc) -> bool:
     """Check wether the sentence in the doc has a form that is currently parseable by this library.
 
     Args:
@@ -654,14 +655,14 @@ def is_parsable_sentence(doc: Doc, nlp: Language) -> bool:
         bool: wether the sentence can currently be parsed
     """
     logwithdepth("Checking if sentence '{}' is parsable.".format(doc))
-    matchers = get_matchers(nlp)
+    matchers = get_matchers(doc.vocab)
     if matchers["negations"](doc):
         logger.debug(
             "Discarded sentence because it contains negation(s): \n {}".format(doc)
         )
         return False
 
-    relation_indicators = get_relation_indicators(doc, nlp)
+    relation_indicators = get_relation_indicators(doc)
 
     if len(relation_indicators) > 1:
         logger.debug(
@@ -772,7 +773,7 @@ def most_precise_relations(rels: Relations) -> Relations:
     return res
 
 
-def parse_sentence(doc: Doc, nlp: Language) -> Relations:
+def parse_sentence(doc: Doc) -> Relations:
     """Parse a full sentence and return a list of all relations
 
     Args:
@@ -783,10 +784,10 @@ def parse_sentence(doc: Doc, nlp: Language) -> Relations:
         [type]: [description]
     """
     logwithdepth("Attempting to parse sentence: '{}'.".format(doc))
-    if not is_parsable_sentence(doc, nlp):
+    if not is_parsable_sentence(doc):
         return []
 
-    relation_indicator = get_relation_indicators(doc, nlp)[0]
+    relation_indicator = get_relation_indicators(doc)[0]
 
     # left_side: Span = doc[0:relation_indicator.start]
     # right_side: Span = doc[relation_indicator.end:-1]
@@ -799,15 +800,25 @@ def parse_sentence(doc: Doc, nlp: Language) -> Relations:
 
     rel_indicator_verb = [w for w in relation_indicator if w.lemma_ == "associate"][0]
     # left_root = left_side.root
-    left_root = [
-        tok for tok in rel_indicator_verb.children if tok.dep_ in ["nsubjpass", "subj"]
-    ][0]
+    try:
+        left_root = [
+            tok
+            for tok in rel_indicator_verb.children
+            if tok.dep_ in ["nsubjpass", "subj"]
+        ][0]
+    except IndexError:
+        return []
     right_root = list(rel_indicator_verb.rights)[0]
-
+    if (
+        not right_root.pos_ in constants.NOUN_POS_TAGS
+        or not left_root.pos_ in constants.NOUN_POS_TAGS
+    ):
+        return []
     # right_root = right_side.root
 
     l_ents = parse_noun_clause(left_root)
     r_ents = parse_noun_clause(right_root)
+
     relations: Relations = []
     for l_ent in l_ents:
         for r_ent in r_ents:
@@ -818,19 +829,24 @@ def parse_sentence(doc: Doc, nlp: Language) -> Relations:
     return relations_unique
 
 
-# def get_relations_generator(sentence_generator: Generator[Union[str,Doc], None, None],nlp:English) -> Generator[Relations, None, None]:
-#     for sent in sentence_generator:
-#         if type(sent) == str:
-#             sent = nlp(sent)
-#             relations = parse_sentence(sent, nlp)
-#             if relations:
-#                 if relations[0][0] and relations[2][0]:
-#                     yield relations
+def get_relations_generator(
+    doc_and_sentence_generator: Iterable[Tuple[tokens.Doc, List[int]]]
+) -> Generator[Tuple[tokens.Doc, Dict[int, Relations]], None, None]:
+    for doc, sentence_indices in doc_and_sentence_generator:
+        sents = list(doc.sents)
+        results_dict: Dict[int, Relations] = {}
+        for sentence_index in sentence_indices:
+            sentence = sents[sentence_index]
+            relations = parse_sentence(sentence.as_doc())
+            if relations:
+                results_dict[sentence_index] = relations
+        yield (doc, results_dict)
 
 
 if __name__ == "__main__":
     # complex_sentence = "I eat both big and small young or old apples."
-    complex_sentence = "By meta-analysis, we found A1166C polymorphism was associated with decreased risk for breast cancer in Caucasian population in an additive model . "
+    # complex_sentence = "By meta-analysis, we found A1166C polymorphism was associated with decreased risk for breast cancer in Caucasian population in an additive model . "
+    complex_sentence = "By meta-analysis, we found A1166C polymorphism was associated with decreased risk for breast cancer in Caucasian population in an additive model ."
 
     logger.setLevel(4)
 
@@ -840,6 +856,6 @@ if __name__ == "__main__":
     # # demultiply_noun_adjectives(ns[-2], [ns[-2]])
     nlp = spacy.load("en_core_sci_md")
     ns = nlp(complex_sentence)
-    p = parse_sentence(ns, nlp)
+    p = parse_sentence(ns)
     for r in p:
         print(pretty_print_relation(r))

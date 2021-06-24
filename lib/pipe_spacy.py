@@ -48,6 +48,7 @@ def get_raw_doc_generator(
             1. spacy docs containing the abstract text
             2. the same metadata as in the tuples received as argument
     """
+    nlp.add_pipe("abbreviation_detector")
     yield from nlp.pipe(abstract_generator, as_tuples=True, n_process=1)
 
 
@@ -84,8 +85,8 @@ def get_relevant_sentence_numbers_generator(
     """
     for doc in extended_doc_generator:
 
-        matcher_relations = Matcher(nlp.vocab)
-        matcher_negations = Matcher(nlp.vocab)
+        matcher_relations = Matcher(doc.vocab)
+        matcher_negations = Matcher(doc.vocab)
         matcher_relations.add("relation", patterns=PATTERNS_NEUTRAL_RELATIONS)
         matcher_negations.add(
             "ignore", patterns=PATTERNS_NEGATION + PATTERNS_IGNORED_WORDS
@@ -106,8 +107,6 @@ if __name__ == "__main__":
     test_query = """"hypersomnia" [All Fields] AND medline[sb] AND "2009/03/20"[PDat] : "2019/03/17"[PDat] AND "humans"[MeSH Terms]"""
 
     # nlp = spacy.load("en_core_sci_md")
-    nlp = spacy.load("en_core_sci_md", exclude=["ner"])
-    nlp.add_pipe("abbreviation_detector")
     # total_ids, ids_generator = pipe_pubmed.get_pmids_generator(query=test_query)
 
     # def inner_gen() -> Generator[str, None, None]:

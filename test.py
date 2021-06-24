@@ -23,7 +23,12 @@ class TestParser(unittest.TestCase):
                 "[[Gestational, diabetes, mellitus] (~)] <-> [[RT] (↑)]",
                 "[[diabetes, mellitus] (~)] <-> [[RT] (↑)]",
             ],
+            "Higher common CIMT is associated with UACR progression": [
+                "[[common, CIMT] (↑)] <-> [[UACR, progression] (~)]",
+                "[[CIMT] (↑)] <-> [[UACR, progression] (~)]]",
+            ],
         }
+
         for sentence in sents_dict:
 
             ns = nlp(sentence)
