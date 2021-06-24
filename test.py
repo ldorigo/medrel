@@ -32,7 +32,7 @@ class TestParser(unittest.TestCase):
         for sentence in sents_dict:
 
             ns = nlp(sentence)
-            relations = parse_sentence(ns, nlp)
+            relations = parse_sentence(ns)
             pp = [pretty_print_relation(rel) for rel in relations]
             self.assertSequenceEqual(sents_dict[sentence], pp)
 
