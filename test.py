@@ -25,7 +25,7 @@ class TestParser(unittest.TestCase):
             ],
             "Higher common CIMT is associated with UACR progression": [
                 "[[common, CIMT] (↑)] <-> [[UACR, progression] (~)]",
-                "[[CIMT] (↑)] <-> [[UACR, progression] (~)]]",
+                "[[CIMT] (↑)] <-> [[UACR, progression] (~)]",
             ],
         }
 
