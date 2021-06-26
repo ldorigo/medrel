@@ -11,6 +11,8 @@
       // "platform": "linux/amd64"
     }
   },
+  "workspaceMount": "source=/home/medrel/Git,target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
   // "runArgs": ["--platform linux/amd64"],
 
   // Set *default* container specific settings.json values on container create.
@@ -37,22 +39,5 @@
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   "forwardPorts": [8888],
 
-  // Use 'portsAttributes' to set default properties for specific forwarded ports. More info: https://code.visualstudio.com/docs/remote/devcontainerjson-reference.
-  //   "portsAttributes": {
-  //     "9000": {
-  //       "label": "Hello Remote World",
-  //       "onAutoForward": "notify"
-  //     }
-  //   },
-
-  // Use 'otherPortsAttributes' to configure any ports that aren't configured using 'portsAttributes'.
-  // "otherPortsAttributes": {
-  // 		"onAutoForward": "silent"
-  // },
-
-  // Use 'postCreateCommand' to run commands after the container is created.
-  //   "postCreateCommand": "pip3 install -r requirements.txt",
-
-  // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode"
 }
