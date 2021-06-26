@@ -26,6 +26,14 @@ RUN apt-get update && apt-get install -y \
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# needed by jupyter
+RUN curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+RUN sudo apt-get install nodejs
+
+# jupyter needs permissions to this path
+RUN sudo mkdir /usr/local/share/jupyter
+RUN sudo chown -R $USER /usr/local/share/jupyter
+
 COPY requirements.txt /home/requirements.txt
 WORKDIR /home/
 RUN pip --no-cache-dir install -r requirements.txt
