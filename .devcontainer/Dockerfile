@@ -12,15 +12,6 @@ RUN if ! cat /etc/group | grep -e "^pip-global:" > /dev/null 2>&1; then groupadd
     && chown :pip-global ${PIP_TARGET} \
     && ( [ ! -f "/etc/profile.d/00-restore-env.sh" ] || sed -i -e "s/export PATH=/export PATH=\/usr\/local\/pip-global:/" /etc/profile.d/00-restore-env.sh )
 
-# [Optional] If your pip requirements rarely change, uncomment this section to add them to the image.
-# COPY requirements.txt /tmp/pip-tmp/
-# RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
-#    && rm -rf /tmp/pip-tmp
-
-# [Optional] Uncomment this section to install additional OS packages.
-# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-#     && apt-get -y install --no-install-recommends <your-package-list-here>
-
 RUN apt-get update && apt-get install -y \
     python-numpy \
     python-scipy \
@@ -35,22 +26,25 @@ RUN apt-get update && apt-get install -y \
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+COPY requirements.txt /home/requirements.txt
+WORKDIR /home/
+RUN pip --no-cache-dir install -r requirements.txt
 # seperate because they run loooong
-RUN pip --no-cache-dir install -U spacy
-RUN pip --no-cache-dir install scispacy
+# RUN pip --no-cache-dir install -U spacy
+# RUN pip --no-cache-dir install scispacy
 
-# Install other useful Python packages using pip
-# down here so it can be changed fatser
-RUN pip --no-cache-dir install --upgrade ipython && \
-    pip --no-cache-dir install \
-    Cython \
-    wheel \
-    jupyterlab
+# # Install other useful Python packages using pip
+# # down here so it can be changed fatser
+# RUN pip --no-cache-dir install --upgrade ipython && \
+#     pip --no-cache-dir install \
+#     Cython \
+#     wheel \
+#     jupyterlab
 
 # COPY en_core_sci_scibert-0.4.0.tar.gz /home/
 # WORKDIR /home/
 # RUN pip --no-cache-dir install en_core_sci_scibert-0.4.0.tar.gz
-RUN pip --no-cache-dir install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_md-0.4.0.tar.gz
+# RUN pip --no-cache-dir install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_md-0.4.0.tar.gz
 
 #Jupyter notebook related configs
 COPY .devcontainer/jupyter_notebook_config.py /root/.jupyter/
