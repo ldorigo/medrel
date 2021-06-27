@@ -11,9 +11,11 @@
       // "platform": "linux/amd64"
     }
   },
+  "containerUser": "1003",
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": false,
   "workspaceMount": "source=/home/medrel/Git,target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
-  // "runArgs": ["--platform linux/amd64"],
 
   // Set *default* container specific settings.json values on container create.
   "settings": {
@@ -37,7 +39,5 @@
   "extensions": ["ms-python.python", "ms-python.vscode-pylance"],
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  "forwardPorts": [8888],
-
-  "remoteUser": "vscode"
+  "forwardPorts": [8888]
 }
