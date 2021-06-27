@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     test_query = """"hypersomnia" [All Fields] AND medline[sb] AND "2009/03/20"[PDat] : "2019/03/17"[PDat] AND "humans"[MeSH Terms]"""
 
-    # nlp = spacy.load("en_core_sci_md")
+    nlp = spacy.load("en_core_sci_md")
     # total_ids, ids_generator = pipe_pubmed.get_pmids_generator(query=test_query)
 
     # def inner_gen() -> Generator[str, None, None]:
